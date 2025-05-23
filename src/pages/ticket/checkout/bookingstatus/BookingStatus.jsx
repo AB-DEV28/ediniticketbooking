@@ -1,7 +1,46 @@
 import React from 'react'
 import { FaArrowRightLong } from 'react-icons/fa6';
-import { Link } from 'react-router-dom';
-const BookingStatus = () => {
+import { useNavigate } from 'react-router-dom';
+import { api } from '../../../../services/api';
+import { useState } from 'react';
+
+const BookingStatus = ({ bookingData }) => {
+    const { selectedSeats = [], schedule = {}, totalFare = 0 } = bookingData || {};
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const navigate = useNavigate();
+
+    const handlePayAndBook = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // For demo, use passenger_id = 1
+            const bookingPayload = {
+                passenger_id: 1,
+                schedule_id: schedule.schedule_id,
+                seat_list: `{${selectedSeats.join(',')}}`,
+                total_amount: totalFare
+            };
+            const res = await api.createBooking(bookingPayload);
+            if (res.success) {
+                // Pass all booking info to payment page
+                navigate('/ticket/payment', {
+                    state: {
+                        ...bookingData,
+                        booking_id: res.booking_id,
+                        payment_status: 'paid',
+                    }
+                });
+            } else {
+                setError(res.error || 'Booking failed.');
+            }
+        } catch (e) {
+            setError('Booking failed.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className='w-full col-span-3 sticky top-20 space-y-7'>
             <div className="w-full gb-neutral-50 rounded-xl py-4 px-6 border border-neutral-200 shadow-sm space-y-5">
@@ -20,13 +59,13 @@ const BookingStatus = () => {
                              justify-between gap-x-5">
                                 <p className='text-sm text-neutral-400 font-normal'>
                                     From <span className='text-xs'>
-                                        (Msila)
+                                        {schedule.from_location || '-'}
                                     </span>
                                 </p>
 
                                 <p className='text-sm text-neutral-400 font-normal'>
                                     To <span className='text-xs'>
-                                        (Alger)
+                                        {schedule.to_location || '-'}
                                     </span>
                                 </p>
                             </div>
@@ -35,27 +74,29 @@ const BookingStatus = () => {
                             <div className="w-full flex items-center
                              justify-between gap-x-4">
                                 <h1 className='text-sm text-neutral-600 font-normal'>
-                                    Msila <span className='font-medium'>(06:15 pm)</span>
+                                    {schedule.from_location || '-'} <span className='font-medium'>({schedule.departure_time ? new Date(schedule.departure_time).toLocaleTimeString() : '-'})</span>
                                 </h1>
 
                                 <div className="flex-1 border-dashed border border-neutral-300 " />
 
                                 <h1 className='text-sm text-neutral-600 font-normal'>
-                                    Alger <span className='font-medium'>(08:45 am)</span>
+                                    {schedule.to_location || '-'} <span className='font-medium'>({schedule.arrival_time ? new Date(schedule.arrival_time).toLocaleTimeString() : '-'})</span>
                                 </h1>
 
 
                             </div>
 
 
-                            <div className="w-full flex items-center justify-between gap-x-4 !mt1.5">
-                                <h1 className="text-sm text-neutral-600 font-normal">
-                                    Bus No. :
-                                </h1>
-                                <h1 className="text-base text-neutral-700 font-medium">
-                                    (Ba . 2 Kha 9704 )
-                                </h1>
-                            </div>
+                            {schedule.vehicle_number && (
+                              <div className="w-full flex items-center justify-between gap-x-4 !mt1.5">
+                                  <h1 className="text-sm text-neutral-600 font-normal">
+                                      Vehicle No. :
+                                  </h1>
+                                  <h1 className="text-base text-neutral-700 font-medium">
+                                      {schedule.vehicle_number}
+                                  </h1>
+                              </div>
+                            )}
                         </div>
 
 
@@ -68,28 +109,16 @@ const BookingStatus = () => {
                             Your Seats
                         </h1>
 
-                        <div className='w-full flex items-center gap-x-3'>
-
-                            <div className='w-9 h-9 bg-neutral-200/80 rounded-lg flex items-center
-                                         justify-center text-base text-neutral-700 font-semibold'>
-                                A2
-                            </div>
-
-                            <div className='w-9 h-9 bg-neutral-200/80 rounded-lg flex items-center
-                                         justify-center text-base text-neutral-700 font-semibold'>
-                                A3
-                            </div>
-
-                            <div className='w-9 h-9 bg-neutral-200/80 rounded-lg flex items-center
-                                         justify-center text-base text-neutral-700 font-semibold'>
-                                A4
-                            </div>
-
-                            <div className='w-9 h-9 bg-neutral-200/80 rounded-lg flex items-center
-                                         justify-center text-base text-neutral-700 font-semibold'>
-                                B6
-                            </div>
-
+                        <div className='w-full flex items-center gap-x-3 flex-wrap'>
+                          {selectedSeats.length > 0 ? (
+                            selectedSeats.map((seatId) => (
+                              <div key={seatId} className='w-9 h-9 bg-neutral-200/80 rounded-lg flex items-center justify-center text-base text-neutral-700 font-semibold'>
+                                {seatId}
+                              </div>
+                            ))
+                          ) : (
+                            <span className='text-sm text-neutral-500'>No seat selected</span>
+                          )}
                         </div>
                     </div>
 
@@ -108,7 +137,7 @@ const BookingStatus = () => {
 
                             {/* Calculate the total price */}
                             <p className='text-base text-neutral-600 font-semibold'>
-                                DA 6400
+                                DA {totalFare}
                             </p>
 
 
@@ -126,12 +155,15 @@ const BookingStatus = () => {
 
 
             <div className="w-full px-1.5">
-                <Link to="/ticket/payment" className='w-full bg-red hover:bg:red/90 
-            text-sm text-neutral-50 font-normal py-2.5 flex items-center 
-            justify-center uppercase rounded-lg transition '>
-                    processed to Pay
-                    <FaArrowRightLong />
-                </Link>
+                <button
+                  onClick={handlePayAndBook}
+                  disabled={loading}
+                  className='w-full bg-red hover:bg:red/90 text-sm text-neutral-50 font-normal py-2.5 flex items-center justify-center uppercase rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed'
+                >
+                  {loading ? 'Processing...' : 'processed to Pay'}
+                  <FaArrowRightLong className='ml-2' />
+                </button>
+                {error && <div className='text-red-600 text-sm mt-2'>{error}</div>}
             </div>
 
 

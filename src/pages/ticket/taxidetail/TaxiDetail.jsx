@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import TopLayout from '../../../layout/toppage/TopLayout'
 import RootLayout from '../../../layout/RootLayout'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import Warning from '../../../components/alertmessage/Warning'
 import TaxiSeat from './seat/taxiseat/TaxiSeat'
 import taxiImage from '../../../assets/hero1.png'
@@ -9,8 +9,37 @@ import ToggleBtn from '../../../components/togglebtn/ToggleBtn'
 import Amenities from '../busdetail/amenities/Amenities'
 import ReservationPolicy from '../busdetail/reservationpolicy/ReservationPolicy'
 import TaxiImage from './taxiimage/TaxiImage'
+import { api } from '../../../services/api'
 
 const TaxiDetail = () => {
+    const { scheduleId } = useParams();
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [schedule, setSchedule] = useState(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // Fetch schedule details
+                const scheduleRes = await api.getSchedules({ schedule_id: scheduleId });
+                setSchedule(scheduleRes.schedules?.[0] || null);
+                // Fetch bookings for this schedule
+                const bookingsRes = await api.getBookings({ schedule_id: scheduleId });
+                setBookings(bookingsRes.bookings || []);
+            } catch {
+                setError('Failed to load schedule or bookings.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (scheduleId) fetchData();
+    }, [scheduleId]);
+
+    if (loading) return <div className='p-8 text-center'>Loading...</div>;
+    if (error) return <div className='p-8 text-center text-red-600'>{error}</div>;
 
     // رسالة تحذيرية عند محاولة حجز عدد كبير
     const message = (
@@ -34,7 +63,7 @@ const TaxiDetail = () => {
                     <Warning message={message} />
 
                     {/* تصميم المقاعد أو تفاصيل الحجز */}
-                    <TaxiSeat /> {/* أو أي كومبوننت يعرض خيارات حجز التاكسي */}
+                    <TaxiSeat bookings={bookings} schedule={schedule} />
 
                 </div>
 

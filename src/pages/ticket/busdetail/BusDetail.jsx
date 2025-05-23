@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import TopLayout from '../../../layout/toppage/TopLayout'
 import RootLayout from '../../../layout/RootLayout'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import Warning from '../../../components/alertmessage/Warning'
 import BusSeat from './seat/busseat/BusSeat'
 import busImage from '../../../assets/hero1.png'
@@ -9,8 +9,14 @@ import ToggleBtn from '../../../components/togglebtn/ToggleBtn'
 import Amenities from './amenities/Amenities'
 import ReservationPolicy from './reservationpolicy/ReservationPolicy'
 import BusImage from './busimage/BusImage'
+import { api } from '../../../services/api'
 
 const BusDetail = () => {
+    const { scheduleId } = useParams();
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [schedule, setSchedule] = useState(null);
 
     // show the warning message box
     const message = (
@@ -20,6 +26,28 @@ const BusDetail = () => {
         </>
     );
 
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // Fetch schedule details
+                const scheduleRes = await api.getSchedules({ schedule_id: scheduleId });
+                setSchedule(scheduleRes.schedules?.[0] || null);
+                // Fetch bookings for this schedule
+                const bookingsRes = await api.getBookings({ schedule_id: scheduleId });
+                setBookings(bookingsRes.bookings || []);
+            } catch {
+                setError('Failed to load schedule or bookings.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (scheduleId) fetchData();
+    }, [scheduleId]);
+
+    if (loading) return <div className='p-8 text-center'>Loading...</div>;
+    if (error) return <div className='p-8 text-center text-red-600'>{error}</div>;
 
     return (
         <div className='w-full space-y-12 pb-16'>
@@ -38,8 +66,7 @@ const BusDetail = () => {
 
 
                     {/*Seat Layout */}
-
-                    <BusSeat />
+                    <BusSeat bookings={bookings} schedule={schedule} />
 
                 </div>
 

@@ -23,9 +23,10 @@ $from_location = isset($_GET['from_location']) ? mysqli_real_escape_string($con,
 $to_location = isset($_GET['to_location']) ? mysqli_real_escape_string($con, $_GET['to_location']) : null;
 $date = isset($_GET['date']) ? mysqli_real_escape_string($con, $_GET['date']) : null;
 $route_id = isset($_GET['route_id']) ? (int)$_GET['route_id'] : null;
+$schedule_id = isset($_GET['schedule_id']) ? (int)$_GET['schedule_id'] : null;
 
 // Build query based on filters
-$sql = "SELECT s.*, r.from_location, r.to_location, v.vehicle_number, v.vehicle_type 
+$sql = "SELECT s.*, r.from_location, r.to_location, v.vehicle_number, v.vehicle_type, v.total_seats 
         FROM schedules s 
         JOIN routes r ON s.route_id = r.route_id 
         JOIN vehicles v ON s.vehicle_id = v.vehicle_id
@@ -48,6 +49,10 @@ if ($route_id) {
     $sql .= " AND s.route_id = $route_id";
 }
 
+if ($schedule_id) {
+    $sql .= " AND s.schedule_id = $schedule_id";
+}
+
 // Order by departure time
 $sql .= " ORDER BY s.departure_time ASC";
 
@@ -68,7 +73,8 @@ if ($result) {
             'price' => $row['price'],
             'status' => $row['status'],
             'vehicle_number' => $row['vehicle_number'],
-            'vehicle_type' => $row['vehicle_type']
+            'vehicle_type' => $row['vehicle_type'],
+            'total_seats' => isset($row['total_seats']) ? $row['total_seats'] : null
         ];
     }
     echo json_encode([

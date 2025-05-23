@@ -5,7 +5,12 @@ import { QRCodeCanvas } from "qrcode.react";
 import { FaPhoneAlt } from "react-icons/fa";
 
 
-const PassengerInvoice = () => {
+const PassengerInvoice = ({ bookingData, user }) => {
+    const { selectedSeats = [], schedule = {}, totalFare = 0, booking_id, payment_status } = bookingData || {};
+    const passengerName = user ? `${user.first_name || user.firstName || '-'} ${user.last_name || user.lastName || '-'}` : '-';
+    const passengerEmail = user ? user.email || '-' : '-';
+    const passengerPhone = user ? user.phone_number || user.phone || '-' : '-';
+
     return (
         <div className='w-full col-span-4 rounded-3xl relative'>
 
@@ -49,14 +54,14 @@ const PassengerInvoice = () => {
                 border-dashed border-b-2 border-neutral-200 pb-3">
 
                         <p className="text-base text-neutral-500 font-normal">
-                            Bill No.:465
+                            Bill No.: {booking_id || '-'}
                         </p>
 
                         <p className="text-base text-neutral-500 font-normal">
-                            1600 DA <span className='text-xs'>/seat</span>
+                            {schedule.price || '-'} DA <span className='text-xs'>/seat</span>
                         </p>
                         <p className="text-base text-neutral-500 font-normal">
-                            Date: 2025-04-13
+                            Date: {schedule.departure_time ? new Date(schedule.departure_time).toLocaleDateString() : '-'}
                         </p>
 
                     </div>
@@ -67,20 +72,26 @@ const PassengerInvoice = () => {
                     <div className="w-full flex items-center justify-between">
                         <div className="space-y-1 5">
                             <p className="text-base text-neutral-600 font-normal">
-                                Name of Passenger: <span className="font-medium">Abderrahim Lina</span>
+                                Name of Passenger: <span className="font-medium">{passengerName}</span>
+                            </p>
+                            <p className="text-base text-neutral-600 font-normal">
+                                Email: <span className="font-medium">{passengerEmail}</span>
+                            </p>
+                            <p className="text-base text-neutral-600 font-normal">
+                                Phone: <span className="font-medium">{passengerPhone}</span>
                             </p>
 
                             <p className="text-base text-neutral-600 font-normal">
-                                Total Seat No: <span className="font-medium">A2, A3, A4, B6</span>
+                                Total Seat No: <span className="font-medium">{selectedSeats && selectedSeats.length > 0 ? selectedSeats.join(', ') : '-'}</span>
                             </p>
 
                             <p className="text-base text-neutral-600 font-normal">
-                                Total No. of Passenger: <span className="font-medium">04 Only</span>
+                                Total No. of Passenger: <span className="font-medium">{selectedSeats && selectedSeats.length > 0 ? selectedSeats.length : '-'}</span>
                             </p>
 
 
-                            <p className="text-base text-neutral-600 font-normal">
-                                Pickup Station: <span className="font-medium">lissm ta3ha m3raf wach</span>
+                            <p className="text-base text-white  font-normal">
+                                <span className="font-medium bg-white">l</span>
                             </p>
 
                         </div>
@@ -91,7 +102,7 @@ const PassengerInvoice = () => {
                                     Total Price
                                 </p>
                                 <h1 className="text-xl text-neutral-600 font-bold">
-                                    1600 DA
+                                    {totalFare} DA
                                 </h1>
                             </div>
 
@@ -102,7 +113,7 @@ const PassengerInvoice = () => {
 
                                 <FaCircleCheck size={16} />
                                 <span>
-                                    Bill paid
+                                    {payment_status === 'paid' ? 'Bill paid' : 'Pending'}
                                 </span>
                             </div>
 
@@ -127,15 +138,14 @@ const PassengerInvoice = () => {
                     <div className="w-full flex items-center justify-between
                 border-dashed border-t-2 border-neutral-200 pt-3">
                         <p className='text-base text-neutral-600 font-normal'>
-                            Msila <span className='text-neutral-400 px-2'>-------</span>
-                            Alger
+                            {schedule.from_location || '-'} <span className='text-neutral-400 px-2'>-------</span> {schedule.to_location || '-'}
                         </p>
 
                         <p className='text-base text-neutral-600 font-normal'>
-                            Arrive at 05:45 PM
+                            Arrive at {schedule.arrival_time ? new Date(schedule.arrival_time).toLocaleTimeString() : '-'}
                         </p>
                         <p className='text-base text-neutral-600 font-normal'>
-                            Departure  at 06:15 PM
+                            Departure at {schedule.departure_time ? new Date(schedule.departure_time).toLocaleTimeString() : '-'}
                         </p>
 
                     </div>

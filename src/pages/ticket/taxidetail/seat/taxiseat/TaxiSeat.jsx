@@ -1,28 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MdOutlineChair } from 'react-icons/md';
 import { GiReceiveMoney } from "react-icons/gi";
 import { Link } from 'react-router-dom';
 
-// Sample taxi seat data with 8 seats
-const taxiSeatData = [
-  { id: 'A1', status: 'available', price: 600 },
-  { id: 'A2', status: 'available', price: 600 },
-  { id: 'A3', status: 'available', price: 600 },
-  { id: 'A4', status: 'available', price: 600 },
-  { id: 'B1', status: 'available', price: 600 },
-  { id: 'B2', status: 'available', price: 600 },
-  { id: 'B3', status: 'available', price: 600 },
-  { id: 'B4', status: 'available', price: 600 },
-];
-
-const TaxiSeat = () => {
+const TaxiSeat = ({ bookings, schedule }) => {
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [showError, setShowError] = useState(false);
 
-  const handleSeatClick = (seatId) => {
-    const selectedSeat = taxiSeatData.find(seat => seat.id === seatId);
-    if (selectedSeat.status === 'booked') return;
+  // Get all reserved seats for this schedule
+  const reservedSeats = useMemo(() => {
+    const reserved = new Set();
+    bookings.forEach(booking => {
+      let seatStr = booking.seat_list || booking.seat_numbers;
+      if (seatStr) {
+        seatStr.replace(/[{}\]]/g, '').split(',').forEach(s => {
+          if (s.trim()) reserved.add(s.trim());
+        });
+      }
+    });
+    return reserved;
+  }, [bookings]);
 
+  // Generate seat data dynamically based on schedule.total_seats (or fallback to 8)
+  const totalSeats = schedule && schedule.total_seats ? Number(schedule.total_seats) : 8;
+  const seatData = useMemo(() => {
+    // Generate seat IDs as 1, 2, 3, ... N
+    return Array.from({ length: totalSeats }, (_, i) => {
+      const seatId = (i + 1).toString();
+      return {
+        id: seatId,
+        status: reservedSeats.has(seatId) ? 'booked' : 'available',
+      };
+    });
+  }, [reservedSeats, totalSeats]);
+
+  const handleSeatClick = (seatId) => {
+    const selectedSeat = seatData.find(seat => seat.id === seatId);
+    if (selectedSeat.status === 'booked') return;
     setSelectedSeats(prev => {
       if (prev.includes(seatId)) {
         return prev.filter(seat => seat !== seatId);
@@ -45,10 +59,14 @@ const TaxiSeat = () => {
     return 'text-neutral-500 cursor-pointer';
   };
 
-  const totalFare = selectedSeats.reduce((total, id) => {
-    const seat = taxiSeatData.find(seat => seat.id === id);
-    return total + (seat ? seat.price : 0);
-  }, 0);
+  const totalFare = schedule && schedule.price
+    ? selectedSeats.length * Number(schedule.price)
+    : 0;
+
+  // Dynamic seat rows: always 2 rows for taxi, or 5 if you want to match bus logic
+  // Here, let's do 2 rows for taxi (4+4 for 8 seats, or as needed)
+  const seatsPerRow = Math.ceil(totalSeats / 2);
+  const rows = [seatData.slice(0, seatsPerRow), seatData.slice(seatsPerRow)];
 
   return (
     <div className='w-full grid grid-cols-5 gap-10'>
@@ -59,11 +77,24 @@ const TaxiSeat = () => {
             Click on available seats to reserve your seat.
           </p>
 
-          <div className="w-full grid grid-cols-4 gap-8 justify-center">
-            {taxiSeatData.map(seat => (
-              <div key={seat.id} onClick={() => handleSeatClick(seat.id)} className='flex flex-col items-center'>
-                <MdOutlineChair className={`text-4xl ${getSeatStyle(seat)}`} />
-                <span className='text-sm font-semibold text-neutral-600'>{seat.id}</span>
+
+
+          <div className="w-full flex flex-col gap-4 items-center justify-center">
+            {rows.map((row, idx) => (
+              <div key={idx} className="w-full h-auto flex flex-row gap-x-5 justify-center">
+                {row.map(seat => (
+                  <div key={seat.id} onClick={() => handleSeatClick(seat.id)} className='flex flex-col items-center'>
+                    <MdOutlineChair className={`text-4xl ${getSeatStyle(seat)}`} />
+                    <span className='text-sm font-semibold text-neutral-600'>{seat.id}</span>
+                  </div>
+                ))}
+                {/* Fill empty columns for alignment */}
+                {Array.from({ length: seatsPerRow - row.length }).map((_, i) => (
+                  <div key={`empty-${i}`} style={{ visibility: 'hidden' }} className='flex flex-col items-center'>
+                    <MdOutlineChair className='text-4xl' />
+                    <span className='text-sm'>-</span>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
@@ -83,7 +114,7 @@ const TaxiSeat = () => {
             </div>
             <div className="flex items-center gap-x-2">
               <GiReceiveMoney className='text-xl text-neutral-500' />
-              <p className='text-sm text-neutral-500 font-medium'>600 DA</p>
+              <p className='text-sm text-neutral-500 font-medium'>{schedule && schedule.price ? schedule.price : 600} DA</p>
             </div>
           </div>
         </div>
@@ -99,13 +130,13 @@ const TaxiSeat = () => {
           </div>
           <div className="space-y-0.5 w-full">
             <div className="w-full flex items-center justify-between">
-              <p className='text-sm text-neutral-400 font-normal'>From <span className='text-xs'>(Bouira)</span></p>
-              <p className='text-sm text-neutral-400 font-normal'>To <span className='text-xs'>(Tizi Ouzou)</span></p>
+              <p className='text-sm text-neutral-400 font-normal'>From <span className='text-xs'>{schedule ? schedule.from_location : '-'}</span></p>
+              <p className='text-sm text-neutral-400 font-normal'>To <span className='text-xs'>{schedule ? schedule.to_location : '-'}</span></p>
             </div>
             <div className="w-full flex items-center justify-between gap-x-4">
-              <h1 className='text-sm text-neutral-600 font-normal'>Bouira <span className='font-medium'>(07:00 am)</span></h1>
+              <h1 className='text-sm text-neutral-600 font-normal'>{schedule ? schedule.from_location : '-'} <span className='font-medium'>({schedule ? new Date(schedule.departure_time).toLocaleTimeString() : '-'})</span></h1>
               <div className="flex-1 border-dashed border border-neutral-300" />
-              <h1 className='text-sm text-neutral-600 font-normal'>Tizi <span className='font-medium'>(08:00 am)</span></h1>
+              <h1 className='text-sm text-neutral-600 font-normal'>{schedule ? schedule.to_location : '-'} <span className='font-medium'>({schedule ? new Date(schedule.arrival_time).toLocaleTimeString() : '-'})</span></h1>
             </div>
           </div>
         </div>
@@ -134,7 +165,7 @@ const TaxiSeat = () => {
           <h1 className="text-lg text-neutral-600 font-medium">Fare Details</h1>
           <div className="w-full flex items-center justify-between border-dashed border-l-[1.5px] border-neutral-400 pl-2">
             <h3 className='text-sm text-neutral-500 font-medium'>Price per seat:</h3>
-            <p className='text-sm text-neutral-600 font-medium'>600 DA</p>
+            <p className='text-sm text-neutral-600 font-medium'>{schedule && schedule.price ? schedule.price : 600} DA</p>
           </div>
           <div className="flex items-center justify-between gap-x-4">
             <div className="flex flex-col gap-y-0.5">
@@ -150,7 +181,15 @@ const TaxiSeat = () => {
           {
             selectedSeats.length > 0
               ?
-              <Link to="/ticket/checkout" className='w-full bg-red hover:bg:red/90 text-sm text-neutral-50 font-normal py-2.5 flex items-center justify-center uppercase rounded-lg transition '>
+              <Link 
+                to="/ticket/checkout"
+                state={{
+                  selectedSeats,
+                  schedule,
+                  totalFare
+                }}
+                className='w-full bg-red hover:bg:red/90 text-sm text-neutral-50 font-normal py-2.5 flex items-center justify-center uppercase rounded-lg transition '
+              >
                 processed to Checkout
               </Link>
               :

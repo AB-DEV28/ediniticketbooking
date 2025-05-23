@@ -39,7 +39,7 @@ try {
     // If cancelling, return seats to available inventory
     if ($status === 'cancelled') {
         // Get booking details
-        $select_sql = "SELECT b.seat_numbers, b.schedule_id 
+        $select_sql = "SELECT b.seat_list, b.schedule_id 
                        FROM Bookings b 
                        WHERE b.booking_id = ?";
         $select_stmt = mysqli_prepare($con, $select_sql);
@@ -49,7 +49,7 @@ try {
         $booking = mysqli_fetch_assoc($result);
 
         // Update available seats
-        $seat_count = count(explode(',', $booking['seat_numbers']));
+        $seat_count = count(array_filter(array_map('trim', explode(',', str_replace(['{','}','[',']','"'], '', $booking['seat_list'])))));
         $update_sql = "UPDATE Schedules 
                        SET available_seats = available_seats + ? 
                        WHERE schedule_id = ?";

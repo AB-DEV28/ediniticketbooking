@@ -21,7 +21,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 
 // Validate required fields
 if (!isset($data['passenger_id']) || !isset($data['schedule_id']) || 
-    !isset($data['seat_numbers']) || !isset($data['total_amount'])) {
+    !isset($data['seat_list']) || !isset($data['total_amount'])) {
     http_response_code(400);
     echo json_encode(['error' => 'Missing required fields']);
     exit();
@@ -59,13 +59,13 @@ try {
     mysqli_begin_transaction($con);
 
     // Insert booking
-    $sql = "INSERT INTO bookings (passenger_id, schedule_id, seat_numbers, total_amount) 
+    $sql = "INSERT INTO bookings (passenger_id, schedule_id, seat_list, total_amount) 
             VALUES (?, ?, ?, ?)";
     $stmt = mysqli_prepare($con, $sql);
     mysqli_stmt_bind_param($stmt, 'iiss', 
         $data['passenger_id'],
         $data['schedule_id'],
-        $data['seat_numbers'],
+        $data['seat_list'],
         $data['total_amount']
     );
     
@@ -76,10 +76,11 @@ try {
     $booking_id = mysqli_insert_id($con);
 
     // Update available seats in schedule
-    $sql = "UPDATE schedules SET available_seats = available_seats - 1 
-            WHERE schedule_id = ? AND available_seats >= 1";
+    $seat_count = count(array_filter(array_map('trim', explode(',', str_replace(['{','}','[',']','"'], '', $data['seat_list'])))));
+    $sql = "UPDATE schedules SET available_seats = available_seats - ? 
+            WHERE schedule_id = ? AND available_seats >= ?";
     $stmt = mysqli_prepare($con, $sql);
-    mysqli_stmt_bind_param($stmt, 'i', $data['schedule_id']);
+    mysqli_stmt_bind_param($stmt, 'iii', $seat_count, $data['schedule_id'], $seat_count);
     
     if (!mysqli_stmt_execute($stmt)) {
         throw new Exception("Failed to update seats: " . mysqli_error($con));

@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 // Get query parameters for filtering
 $passenger_id = isset($_GET['passenger_id']) ? (int)$_GET['passenger_id'] : null;
 $status = isset($_GET['status']) ? mysqli_real_escape_string($con, $_GET['status']) : null;
+$schedule_id = isset($_GET['schedule_id']) ? (int)$_GET['schedule_id'] : null;
 
 $sql = "SELECT b.*, s.departure_time, s.arrival_time, s.price,
                r.from_location, r.to_location,
@@ -29,12 +30,12 @@ $sql = "SELECT b.*, s.departure_time, s.arrival_time, s.price,
         JOIN routes r ON s.route_id = r.route_id
         JOIN vehicles v ON s.vehicle_id = v.vehicle_id";
 
-if ($passenger_id) {
-    $sql .= " WHERE b.passenger_id = $passenger_id";
-}
-
-if ($status) {
-    $sql .= ($passenger_id ? " AND" : " WHERE") . " b.status = '$status'";
+$where = [];
+if ($passenger_id) $where[] = "b.passenger_id = $passenger_id";
+if ($status) $where[] = "b.status = '$status'";
+if ($schedule_id) $where[] = "b.schedule_id = $schedule_id";
+if (count($where) > 0) {
+    $sql .= ' WHERE ' . implode(' AND ', $where);
 }
 
 $sql .= " ORDER BY b.booking_date DESC";

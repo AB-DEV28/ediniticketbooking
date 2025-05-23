@@ -34,6 +34,8 @@ const Hero = () => {
                                     routeTo={schedule.to_location}
                                     timeDuration={schedule.duration || schedule.estimated_time || "4 Hours"}
                                     price={`${schedule.price} DA`}
+                                    scheduleId={schedule.schedule_id}
+                                    vehicleType={schedule.vehicle_type}
                                 />
                             ))}
                         </div>

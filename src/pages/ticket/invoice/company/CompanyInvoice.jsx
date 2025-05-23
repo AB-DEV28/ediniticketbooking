@@ -1,7 +1,12 @@
 import React from 'react'
 import { FaPhoneAlt } from 'react-icons/fa'
 
-const CompanyInvoice = () => {
+const CompanyInvoice = ({ bookingData = {}, user }) => {
+  const { selectedSeats = [], schedule = {}, totalFare = 0, booking_id } = bookingData;
+  const passengerName = user ? `${user.first_name || user.firstName || '-'} ${user.last_name || user.lastName || '-'}` : '-';
+  const passengerEmail = user ? user.email || '-' : '-';
+  const passengerPhone = user ? user.phone_number || user.phone || '-' : '-';
+
   return (
     <div className='w-full col-span-1 border-dashed border-l-2 *
     border-neutral-400 relative'>
@@ -14,41 +19,49 @@ const CompanyInvoice = () => {
 
       <div className="w-full px-4 py-7 space-y-1">
         <p className="text-sm text-neutral-600 font-normal">
-          Bill No.:456
+          Bill No.: {booking_id || '-'}
         </p>
 
         <p className="text-sm text-neutral-600 font-normal">
-          Date: 2025-04-13
+          Date: {schedule.departure_time ? new Date(schedule.departure_time).toLocaleDateString() : '-'}
         </p>
 
         <p className="text-sm text-neutral-600 font-normal">
-          Name: Abderrahim Lina
+          Name: {passengerName}
         </p>
 
         <p className="text-sm text-neutral-600 font-normal">
-          From Msila <span className='text-xs'>
-            (Bus No.)
+          Email: {passengerEmail}
+        </p>
+
+        <p className="text-sm text-neutral-600 font-normal">
+          Phone: {passengerPhone}
+        </p>
+
+        <p className="text-sm text-neutral-600 font-normal">
+          From {schedule.from_location || '-'} <span className='text-xs'>
+            ({schedule.vehicle_number || 'Bus/Taxi'})
           </span>
         </p>
         <p className="text-sm text-neutral-600 font-normal">
-          To Alger <span className='text-xs'>
-            (Bus No.)
+          To {schedule.to_location || '-'} <span className='text-xs'>
+            ({schedule.vehicle_number || 'Bus/Taxi'})
           </span>
         </p>
         <p className="text-sm text-neutral-600 font-normal">
-          Dept. Time: 06:15 PM
+          Dept. Time: {schedule.departure_time ? new Date(schedule.departure_time).toLocaleTimeString() : '-'}
         </p>
 
         <p className="text-sm text-neutral-600 font-normal">
-          Seat No: A2, A3, A4, B6
+          Seat No: {selectedSeats && selectedSeats.length > 0 ? selectedSeats.join(', ') : '-'}
         </p>
 
         <p className="text-sm text-neutral-600 font-normal">
-          Total Passenger: 04 Only
+          Total Passenger: {selectedSeats && selectedSeats.length > 0 ? selectedSeats.length : '-'}
         </p>
 
         <p className="text-sm text-neutral-600 font-normal">
-          Total Price: 1600 DA
+          Total Price: {totalFare} DA
         </p>
 
 

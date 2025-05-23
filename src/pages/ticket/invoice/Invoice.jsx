@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import TopLayout from '../../../layout/toppage/TopLayout'
 import RootLayout from '../../../layout/RootLayout'
 import busImage from '../../../assets/hero1.png'
@@ -6,8 +6,17 @@ import PassengerInvoice from './passengerinvoice/PassengerInvoice'
 import CompanyInvoice from './company/CompanyInvoice'
 import { toPng } from 'html-to-image'
 import download from 'downloadjs'
+import { useLocation } from 'react-router-dom'
 
 const Invoice = () => {
+    const location = useLocation();
+    const bookingData = location.state || {};
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const storedUser = JSON.parse(localStorage.getItem('user')) || JSON.parse(sessionStorage.getItem('user'));
+        setUser(storedUser);
+    }, []);
 
     const invoiceRef = useRef(null);
 
@@ -56,13 +65,13 @@ const Invoice = () => {
 
                         {/* left side (for passenger) */}
 
-                        <PassengerInvoice/>
+                        <PassengerInvoice bookingData={bookingData} user={user}/>
 
 
 
                         {/* right side (for company) */}
 
-                        <CompanyInvoice />
+                        <CompanyInvoice bookingData={bookingData} user={user}/>
 
 
                         {/* cut circle */}

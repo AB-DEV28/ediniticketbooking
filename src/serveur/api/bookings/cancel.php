@@ -27,7 +27,7 @@ mysqli_begin_transaction($con);
 
 try {
     // Check if booking exists and can be cancelled
-    $check_sql = "SELECT b.status, b.seat_numbers, b.schedule_id, s.departure_time 
+    $check_sql = "SELECT b.status, b.seat_list, b.schedule_id, s.departure_time 
                   FROM bookings b 
                   JOIN schedules s ON b.schedule_id = s.id 
                   WHERE b.id = ?";
@@ -68,7 +68,7 @@ try {
     }
 
     // Return seats to available inventory
-    $seat_count = count(explode(',', $booking['seat_numbers']));
+    $seat_count = count(array_filter(array_map('trim', explode(',', str_replace(['{','}','[',']','"'], '', $booking['seat_list'])))));
     $seats_sql = "UPDATE schedules 
                   SET available_seats = available_seats + ? 
                   WHERE id = ?";
