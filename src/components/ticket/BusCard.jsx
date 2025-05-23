@@ -12,7 +12,9 @@ const BusCard = ({
     arrivalTime,
     departureTime,
     price,
-    availableSeats
+    availableSeats,
+    vehicleType,
+    scheduleId
 }) => {
     return (
 
@@ -92,8 +94,7 @@ const BusCard = ({
                         </div>
                     </div>
                 </div>
-
-                {/* Price, available seats, and reserve Link */}
+{/* Price, available seats, and reserve Link */}
                 <div className="w-full flex items-center justify-between">
                     {/* Price */}
                     <h1 className="text-xl text-neutral-700 font-semibold">
@@ -111,7 +112,14 @@ const BusCard = ({
 
 
 
-                    <Link to="/ticket/busdetail" className="px-5 py-1.5 bg-red hover:bg-transparent border-2 border-red hover:border-red rounded-xl text-sm font-normal text-neutral-50 flex items-center justify-center gap-x-2 hover:text-red ease-in-out duration-300">
+                    <Link
+                      to={
+                        vehicleType === 'taxi'
+                          ? `/ticket/taxidetail/${scheduleId}`
+                          : `/ticket/busdetail/${scheduleId}`
+                      }
+                      className="px-5 py-1.5 bg-red hover:bg-transparent border-2 border-red hover:border-red rounded-xl text-sm font-normal text-neutral-50 flex items-center justify-center gap-x-2 hover:text-red ease-in-out duration-300"
+                    >
                         Reserve Seat
                     </Link>
                 </div>
